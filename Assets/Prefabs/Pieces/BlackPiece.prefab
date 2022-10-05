@@ -16,6 +16,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: BlackPiece
       objectReference: {fileID: 0}
+    - target: {fileID: 5108932078247506702, guid: 1035f0a410a72f246b389f58257dea0a, type: 3}
+      propertyPath: team
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5935111561526388201, guid: 1035f0a410a72f246b389f58257dea0a, type: 3}
       propertyPath: m_RootOrder
       value: 0

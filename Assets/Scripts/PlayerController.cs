@@ -76,7 +76,7 @@ public class PlayerController : NetworkBehaviour, IKickable
             Mathf.Clamp(velocity.z,-maxSpeed, maxSpeed));
     }
 
-    public void GetKicked()
+    public void GetKicked(float angle)
     {
         
     }

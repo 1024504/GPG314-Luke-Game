@@ -4,5 +4,5 @@ using UnityEngine;
 
 public interface IKickable
 {
-    public void GetKicked();
+    public void GetKicked(float angle);
 }
