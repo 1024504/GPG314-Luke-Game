@@ -10,6 +10,8 @@ public class GameManager : NetworkBehaviour
     [SerializeField] private Transform whiteParent;
     [SerializeField] private Transform blackParent;
 
+    public bool piecesSpawned;
+
     void Start()
     {
         // if (IsServer)
@@ -21,8 +23,9 @@ public class GameManager : NetworkBehaviour
     void Update()
     {
         if (!IsServer) return;
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(KeyCode.Space) && !piecesSpawned)
         {
+	        piecesSpawned = true;
             SpawnPieces();
         }
     }

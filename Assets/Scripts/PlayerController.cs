@@ -8,12 +8,16 @@ public class PlayerController : NetworkBehaviour, IKickable
 {
     private PlayerControls _playerControls;
     private InputAction _move;
+    private InputAction _kick;
     [SerializeField] private Vector2 moveInput;
     private Transform _transform;
     private Rigidbody _rb;
     public float acceleration = 15f;
     public float maxSpeed = 10f;
+    public float turnSpeed = 5f;
     public float drag = 1f;
+    
+    public List<IKickable> kickTargets = new();
 
     #region Inputs
     void MoveInputPerformed(InputAction.CallbackContext context)
@@ -24,6 +28,11 @@ public class PlayerController : NetworkBehaviour, IKickable
     void MoveInputCancelled(InputAction.CallbackContext context)
     {
         moveInput = Vector2.zero;
+    }
+
+    void KickPerformed(InputAction.CallbackContext context)
+    {
+	    Kick();
     }
     #endregion
 
@@ -36,6 +45,9 @@ public class PlayerController : NetworkBehaviour, IKickable
         _move.Enable();
         _move.performed += MoveInputPerformed;
         _move.canceled += MoveInputCancelled;
+        _kick = _playerControls.Player.Kick;
+        _kick.Enable();
+        _kick.performed += KickPerformed;
     }
 
     void OnDisable()
@@ -43,12 +55,15 @@ public class PlayerController : NetworkBehaviour, IKickable
         _move.performed -= MoveInputPerformed;
         _move.canceled -= MoveInputCancelled;
         _move.Disable();
+        _kick.performed -= KickPerformed;
+        _kick.Disable();
     }
     
     // Update is called once per frame
     void FixedUpdate()
     {
-        if(IsOwner) RequestPlayerFixedUpdateServerRpc(moveInput);
+        if(IsLocalPlayer) RequestPlayerFixedUpdateServerRpc(moveInput);
+        Debug.Log(kickTargets.Count);
     }
 
     [ServerRpc]
@@ -60,10 +75,8 @@ public class PlayerController : NetworkBehaviour, IKickable
     [ClientRpc]
     void PlayerFixedUpdateClientRpc(Vector2 input)
     {
-        Quaternion rotation = _transform.rotation;
         MovePlayer(input);
         _rb.angularVelocity = Vector3.zero;
-        _transform.rotation = rotation;
     }
 
     void MovePlayer(Vector2 input)
@@ -72,8 +85,19 @@ public class PlayerController : NetworkBehaviour, IKickable
         _rb.AddForce(-velocity*drag, ForceMode.Acceleration);
         Vector3 heading = new (input.x*acceleration, 0,input.y*acceleration);
         _rb.AddForce(heading, ForceMode.Acceleration);
-        _rb.velocity = new(Mathf.Clamp(velocity.x,-maxSpeed, maxSpeed),0,
+        _rb.velocity = new(Mathf.Clamp(velocity.x,-maxSpeed, maxSpeed),_rb.velocity.y,
             Mathf.Clamp(velocity.z,-maxSpeed, maxSpeed));
+        _rb.AddTorque(0f,turnSpeed*Vector3.SignedAngle(_transform.forward,heading,Vector3.up),0f, ForceMode.Acceleration);
+        
+    }
+
+    private void Kick()
+    {
+	    foreach (IKickable t in kickTargets)
+	    {
+		    t.GetKicked(Vector3.SignedAngle(Vector3.forward,
+			    ((MonoBehaviour)t).GetComponent<Transform>().position-_transform.position, Vector3.up));
+	    }
     }
 
     public void GetKicked(float angle)
