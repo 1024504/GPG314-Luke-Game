@@ -1,23 +1,22 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using Unity.Netcode;
 using UnityEngine;
 
 public class GameManager : NetworkBehaviour
 {
-    public GameObject whitePiecePrefab;
-    public GameObject blackPiecePrefab;
-    [SerializeField] private Transform whiteParent;
-    [SerializeField] private Transform blackParent;
+	[SerializeField] private GameObject whitePieces;
+    [SerializeField] private GameObject blackPieces;
+
+    private NetworkManager _networkManager;
 
     public bool piecesSpawned;
 
     void Start()
     {
-        // if (IsServer)
-        // {
-        //     SpawnPieces();
-        // }
+	    _networkManager = NetworkManager.Singleton;
+	    _networkManager.OnServerStarted += SpawnPieces;
     }
 
     void Update()
@@ -32,34 +31,11 @@ public class GameManager : NetworkBehaviour
 
     void SpawnPieces()
     {
-        for (int i = 0; i < 12; i++)
-        {
-            Vector3 positionWhite;
-            Vector3 positionBlack;
-            if (i > 3 && i < 8)
-            {
-                positionWhite = new Vector3(-25f+20f*(i%4), 1.05f, -35f+10f*((i-i%4)/4));
-                positionBlack = new Vector3(-35f+20f*(i%4), 1.05f, 35f-10f*((i-i%4)/4));
-            }
-            else
-            {
-                positionWhite = new Vector3(-35f+20f*(i%4), 1.05f, -35f+10f*((i-i%4)/4));
-                positionBlack = new Vector3(-25f+20f*(i%4), 1.05f, 35f-10f*((i-i%4)/4));
-            }
-            SpawnWhitePieceClientRpc(positionWhite);
-            SpawnBlackPieceClientRpc(positionBlack);
-        }
-    }
-
-    [ClientRpc]
-    private void SpawnWhitePieceClientRpc(Vector3 position)
-    {
-        Instantiate(whitePiecePrefab, position, Quaternion.identity, whiteParent);
-    }
-    
-    [ClientRpc]
-    private void SpawnBlackPieceClientRpc(Vector3 position)
-    {
-        Instantiate(blackPiecePrefab, position, Quaternion.identity, blackParent);
+	    if (!IsServer) return;
+	    GameObject go = Instantiate(whitePieces);
+	    go.GetComponent<NetworkObject>().Spawn();
+	    
+	    go = Instantiate(blackPieces);
+	    go.GetComponent<NetworkObject>().Spawn();
     }
 }

@@ -1,9 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
-public class CheckerPiece : MonoBehaviour, IKickable
+public class CheckerPiece : NetworkBehaviour, IKickable
 {
 	///for testing
 	public float testAngle;
@@ -17,11 +18,17 @@ public class CheckerPiece : MonoBehaviour, IKickable
 	public TeamColour team;
 	public bool isKing;
 	private Transform _transform;
-	private bool[] _targetOccupation;
+	private OccupationStatus _targetOccupation;
 
 	private void Start()
 	{
 		_transform = transform;
+	}
+
+	[ClientRpc]
+	public void GetTakenClientRpc()
+	{
+		Destroy(gameObject);
 	}
 
 	public void GetKicked(float angle)
@@ -29,17 +36,19 @@ public class CheckerPiece : MonoBehaviour, IKickable
 		if (!isKing && IsMovingBackwards(angle)) return;
 		Vector3 target = GetTarget(angle);
 		if (IsOutOfBounds(target)) return;
-		_targetOccupation = IsOccupiedByEnemy(target);
-		if (!_targetOccupation[0])
+		_targetOccupation = CheckOccupationStatus(target);
+		if (!_targetOccupation.IsOccupied)
 		{
-			MoveSingle(target);
+			MoveSingleClientRpc(target);
 		}
-		else if (_targetOccupation[1])
+		else if (_targetOccupation.IsOpponent)
 		{
 			target += target - _transform.position;
 			if (IsOutOfBounds(target)) return;
-			_targetOccupation = IsOccupiedByEnemy(target);
-			if (!_targetOccupation[0]) MoveDouble(target);
+			CheckerPiece opponentPiece = _targetOccupation.Opponent;
+			_targetOccupation = CheckOccupationStatus(target);
+			if (!_targetOccupation.IsOccupied) MoveSingleClientRpc(target);
+			opponentPiece.GetTakenClientRpc();
 		}
 		else return;
 		
@@ -89,40 +98,41 @@ public class CheckerPiece : MonoBehaviour, IKickable
 	    return target.z < -40;
     }
 
-    private bool[] IsOccupiedByEnemy(Vector3 target)
+    private OccupationStatus CheckOccupationStatus(Vector3 target)
     {
-	    bool[] res = new bool[2]
-	    {
-		    false, // Is the space occupied?
-		    false  // Is it occupied by an enemy?
-	    };
-	    
+	    OccupationStatus res = new OccupationStatus();
+
 	    foreach (Collider t in Physics.OverlapBox(target, new Vector3(0.1f, 0.1f, 0.1f)))
 	    {
 		    CheckerPiece overlap = t.GetComponent<CheckerPiece>();
 		    if (overlap == null) continue;
-		    res[0] = true;
-			res[1] = overlap.team != team;
+		    res.IsOccupied = true;
+			res.IsOpponent = overlap.team != team;
+			res.Opponent = overlap;
 	    }
 	    return res;
     }
-
     
-    
-    private void MoveSingle(Vector3 target)
+    [ClientRpc]
+    private void MoveSingleClientRpc(Vector3 target)
     {
-	    Debug.Log("Move 1");
 	    _transform.position = target;
     }
 
-    private void MoveDouble(Vector3 target)
+    private void CheckContinuingConquer()
     {
-	    Debug.Log("Move 2");
-	    _transform.position = target;
+	    
     }
 
     private void King()
     {
 	    
+    }
+
+    private struct OccupationStatus
+    {
+	    public bool IsOccupied;
+	    public bool IsOpponent;
+	    public CheckerPiece Opponent;
     }
 }

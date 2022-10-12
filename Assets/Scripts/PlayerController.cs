@@ -19,27 +19,36 @@ public class PlayerController : NetworkBehaviour, IKickable
     
     public List<IKickable> kickTargets = new();
 
+    private NetworkManager _networkManager;
+    
     #region Inputs
-    void MoveInputPerformed(InputAction.CallbackContext context)
+    private void MoveInputPerformed(InputAction.CallbackContext context)
     {
+	    if (!IsLocalPlayer) return;
         moveInput = context.ReadValue<Vector2>();
     }
     
-    void MoveInputCancelled(InputAction.CallbackContext context)
+    private void MoveInputCancelled(InputAction.CallbackContext context)
     {
+	    if (!IsLocalPlayer) return;
         moveInput = Vector2.zero;
     }
 
-    void KickPerformed(InputAction.CallbackContext context)
+    private void KickPerformed(InputAction.CallbackContext context)
     {
-	    Kick();
+	    if (!IsLocalPlayer) return;
+	    RequestKickServerRpc();
     }
     #endregion
 
-    void OnEnable()
+    private void OnEnable()
     {
-        _transform = transform;
+	    _networkManager = NetworkManager.Singleton;
+	    _networkManager.OnClientConnectedCallback += MoveOnSpawn;
+	    _transform = transform;
         _rb = GetComponent<Rigidbody>();
+        
+        
         _playerControls = new();
         _move = _playerControls.Player.Move;
         _move.Enable();
@@ -50,9 +59,9 @@ public class PlayerController : NetworkBehaviour, IKickable
         _kick.performed += KickPerformed;
     }
 
-    void OnDisable()
+    private void OnDisable()
     {
-        _move.performed -= MoveInputPerformed;
+	    _move.performed -= MoveInputPerformed;
         _move.canceled -= MoveInputCancelled;
         _move.Disable();
         _kick.performed -= KickPerformed;
@@ -60,38 +69,50 @@ public class PlayerController : NetworkBehaviour, IKickable
     }
     
     // Update is called once per frame
-    void FixedUpdate()
+    private void FixedUpdate()
     {
-        if(IsLocalPlayer) RequestPlayerFixedUpdateServerRpc(moveInput);
-        Debug.Log(kickTargets.Count);
+	    if (IsLocalPlayer)
+	    {
+		    MovePlayer(moveInput); //Clientside prediction
+		    RequestPlayerFixedUpdateServerRpc(moveInput);
+	    }
     }
 
-    [ServerRpc]
-    void RequestPlayerFixedUpdateServerRpc(Vector2 input)
+    void MoveOnSpawn(ulong clientId)
     {
-        PlayerFixedUpdateClientRpc(input);
+	    if (!IsServer) return;
+	    if (OwnerClientId != clientId) return;
+	    Vector3 displacement = new Vector3(clientId*4f,0f,0f);
+	    MoveOnSpawnClientRpc(displacement);
     }
 
     [ClientRpc]
-    void PlayerFixedUpdateClientRpc(Vector2 input)
+    void MoveOnSpawnClientRpc(Vector3 displacement)
+    {
+	    _transform.position += displacement;
+    }
+
+    [ServerRpc]
+    private void RequestPlayerFixedUpdateServerRpc(Vector2 input)
     {
         MovePlayer(input);
+    }
+
+    private void MovePlayer(Vector2 input)
+    {
+        Vector3 velocity = _rb.velocity;
+        Vector3 dragVector3 = new Vector3(-velocity.x*drag, 0, -velocity.z*drag);
+        _rb.AddForce(dragVector3, ForceMode.Acceleration);
+        Vector3 heading = new (input.x*acceleration, 0,input.y*acceleration);
+        _rb.AddForce(heading, ForceMode.Acceleration);
+        _rb.velocity = new(Mathf.Clamp(velocity.x,-maxSpeed, maxSpeed),velocity.y,
+            Mathf.Clamp(velocity.z,-maxSpeed, maxSpeed));
+        _rb.AddTorque(0f,turnSpeed*Vector3.SignedAngle(_transform.forward,heading,Vector3.up),0f, ForceMode.Acceleration);
         _rb.angularVelocity = Vector3.zero;
     }
 
-    void MovePlayer(Vector2 input)
-    {
-        Vector3 velocity = _rb.velocity;
-        _rb.AddForce(-velocity*drag, ForceMode.Acceleration);
-        Vector3 heading = new (input.x*acceleration, 0,input.y*acceleration);
-        _rb.AddForce(heading, ForceMode.Acceleration);
-        _rb.velocity = new(Mathf.Clamp(velocity.x,-maxSpeed, maxSpeed),_rb.velocity.y,
-            Mathf.Clamp(velocity.z,-maxSpeed, maxSpeed));
-        _rb.AddTorque(0f,turnSpeed*Vector3.SignedAngle(_transform.forward,heading,Vector3.up),0f, ForceMode.Acceleration);
-        
-    }
-
-    private void Kick()
+    [ServerRpc]
+    private void RequestKickServerRpc()
     {
 	    foreach (IKickable t in kickTargets)
 	    {
