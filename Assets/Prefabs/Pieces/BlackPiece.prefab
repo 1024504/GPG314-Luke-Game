@@ -16,6 +16,10 @@ PrefabInstance:
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 4e67f55f2b85a594194cf3f504155dc8, type: 2}
+    - target: {fileID: 2969058273544549994, guid: 1035f0a410a72f246b389f58257dea0a, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 4e67f55f2b85a594194cf3f504155dc8, type: 2}
     - target: {fileID: 2982422965651648844, guid: 1035f0a410a72f246b389f58257dea0a, type: 3}
       propertyPath: m_Name
       value: BlackPiece
@@ -66,6 +70,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5935111561526388201, guid: 1035f0a410a72f246b389f58257dea0a, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6319669564047339719, guid: 1035f0a410a72f246b389f58257dea0a, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: f65a6b9a4adb5ee40a30d2bede1a351b, type: 2}
+    - target: {fileID: 7213667417035845168, guid: 1035f0a410a72f246b389f58257dea0a, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 4e67f55f2b85a594194cf3f504155dc8, type: 2}
+    - target: {fileID: 7266783871724461836, guid: 1035f0a410a72f246b389f58257dea0a, type: 3}
+      propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents:

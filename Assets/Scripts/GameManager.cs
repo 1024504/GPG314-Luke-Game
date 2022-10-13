@@ -2,7 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : NetworkBehaviour
 {
@@ -21,17 +23,22 @@ public class GameManager : NetworkBehaviour
 
     void Update()
     {
-        if (!IsServer) return;
-        if (Input.GetKeyDown(KeyCode.Space) && !piecesSpawned)
+        if (Input.GetKeyDown(KeyCode.Space) && IsServer)
         {
-	        piecesSpawned = true;
-            SpawnPieces();
+	        LoadSceneClientRpc("Test Scene 2");
         }
+    }
+
+    [ClientRpc]
+    void LoadSceneClientRpc(string sceneName)
+    {
+	    _networkManager.SceneManager.LoadScene(sceneName, LoadSceneMode.Additive);
     }
 
     void SpawnPieces()
     {
-	    if (!IsServer) return;
+	    if (!IsServer || piecesSpawned) return;
+	    piecesSpawned = true;
 	    GameObject go = Instantiate(whitePieces);
 	    go.GetComponent<NetworkObject>().Spawn();
 	    
