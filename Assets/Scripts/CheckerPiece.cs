@@ -27,20 +27,22 @@ public class CheckerPiece : NetworkBehaviour, IKickable
 		get => isKing;
 		set
 		{
+			if (!IsServer) return;
 			ChangeKingStateClientRpc(value);
 			isKing = value;
 		}
 	}
 
 	private bool isMoving;
-	
-	[SerializeField] private GameObject KingView;
+
+	private CheckerPieceView _view;
 	private Transform _transform;
 	private OccupationStatus _targetOccupation;
 
 	private void Start()
 	{
 		_transform = transform;
+		_view = GetComponentInChildren<CheckerPieceView>();
 	}
 
 	[ClientRpc]
@@ -154,17 +156,23 @@ public class CheckerPiece : NetworkBehaviour, IKickable
 		    if (i == 49 && opponent != null) opponent.GetTakenClientRpc();
 		    yield return new WaitForSeconds(0.005f);
 	    }
-
 	    MovePieceClientRpc(target);
+	    if (IsServer) StartRippleEffectClientRpc(target);
 	    isMoving = false;
 	    if (IsEndOfBoard(target)) IsKing = true;
 	    if (opponent != null) CheckContinuingConquer();
     }
 
     [ClientRpc]
+    private void StartRippleEffectClientRpc(Vector3 position)
+    {
+	    if (IsClient) _view.RippleEffect(position);
+    }
+    
+    [ClientRpc]
     private void ChangeKingStateClientRpc(bool state)
     {
-	    KingView.SetActive(state);
+	    if (IsClient) _view.ChangeKingState(state);
     }
 
     [ClientRpc]

@@ -84,6 +84,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8185770980225154552, guid: 1035f0a410a72f246b389f58257dea0a, type: 3}
+      propertyPath: rippleEffectPrefab
+      value: 
+      objectReference: {fileID: 2810158387694939660, guid: 6fb81ee3bb4b32b458498f660587b1ec, type: 3}
     m_RemovedComponents:
     - {fileID: -6066557507318264606, guid: 1035f0a410a72f246b389f58257dea0a, type: 3}
     m_AddedGameObjects: []

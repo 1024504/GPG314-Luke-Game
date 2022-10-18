@@ -53,7 +53,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveInput: {x: 0, y: 0}
   acceleration: 100
-  maxSpeed: 10
+  maxSpeed: 15
   turnSpeed: 5
   drag: 7
 --- !u!136 &5296546071687087741
