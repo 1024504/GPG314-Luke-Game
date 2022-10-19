@@ -6,7 +6,7 @@ using UnityEngine;
 public class PlayerKickTrigger : MonoBehaviour
 {
 	[SerializeField]
-	private PlayerController player;
+	private Player player;
 
 	private void OnTriggerEnter(Collider other)
 	{
