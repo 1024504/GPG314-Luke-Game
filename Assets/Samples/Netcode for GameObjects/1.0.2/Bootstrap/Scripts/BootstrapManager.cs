@@ -1,3 +1,5 @@
+using System;
+using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 
 namespace Unity.Netcode.Samples
@@ -13,6 +15,7 @@ namespace Unity.Netcode.Samples
             GUILayout.BeginArea(new Rect(10, 10, 300, 300));
 
             var networkManager = NetworkManager.Singleton;
+            var unityTransport = GetComponent<UnityTransport>();
             if (!networkManager.IsClient && !networkManager.IsServer)
             {
                 if (GUILayout.Button("Host"))
@@ -29,6 +32,8 @@ namespace Unity.Netcode.Samples
                 {
                     networkManager.StartServer();
                 }
+
+                unityTransport.ConnectionData.Address = GUILayout.TextField(unityTransport.ConnectionData.Address);
             }
             else
             {
