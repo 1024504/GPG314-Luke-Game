@@ -1,29 +1,34 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEditor.Build.Content;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 
 public class HostGUI : MonoBehaviour
 {
 	[SerializeField] private HostOrJoinGUI hostOrJoinGui;
-	[SerializeField] private Texture backImage;
 	public string playerName;
 	public int sceneCount;
 	public List<string> scenes;
+    private NetworkManager _networkManager;
 
-	public string selectedLevel;
+	public string selectedScene;
 
 	public List<string> playerNames = new ();
 	
 	private void OnEnable()
-	{
+    {
+        _networkManager = NetworkManager.Singleton;
 		sceneCount = SceneManager.sceneCountInBuildSettings;
 		scenes = new(sceneCount);
-		for (int i = 0; i < sceneCount; i++)
-		{
-			scenes.Add(System.IO.Path.GetFileNameWithoutExtension(SceneUtility.GetScenePathByBuildIndex(i)));
+        for (int i = 0; i < sceneCount; i++)
+        {
+            string sceneName = System.IO.Path.GetFileNameWithoutExtension(SceneUtility.GetScenePathByBuildIndex(i));
+            if (sceneName == "Lobby") continue;
+			scenes.Add(sceneName);
 		}
 		playerNames.Add(playerName);
 	}
@@ -31,12 +36,12 @@ public class HostGUI : MonoBehaviour
 	void OnGUI()
 	{
 		GUILayout.BeginArea(new Rect(Screen.width/2f - Screen.width/2.5f, 20, Screen.width*2/2.5f, 300));
-		if (selectedLevel != "")
+		if (selectedScene != "")
 		{
 			if (GUILayout.Button("Start Game"))
-			{ 
-				Debug.Log("Start Game");
-			}
+            {
+                _networkManager.SceneManager.LoadScene(selectedScene,LoadSceneMode.Additive);
+            }
 		}
 		else
 		{
@@ -66,20 +71,20 @@ public class HostGUI : MonoBehaviour
 
 		GUILayout.Label("Level: ");
 
-		if (selectedLevel == "")
+		if (selectedScene == "")
 		{
 			GUILayout.Label("None");
 		}
 		else
 		{
-			GUILayout.Label(selectedLevel);
+			GUILayout.Label(selectedScene);
 		}
 		
 		GUILayout.EndHorizontal();
 		
 		foreach (string sceneName in scenes)
 		{
-			if (GUILayout.Button(sceneName)) selectedLevel = sceneName;
+			if (GUILayout.Button(sceneName)) selectedScene = sceneName;
 		}
 		
 		GUILayout.EndVertical();

@@ -25,6 +25,7 @@ namespace Unity.Netcode.Samples
 
                 if (GUILayout.Button("Client"))
                 {
+                    if (unityTransport.ConnectionData.Address == "") unityTransport.ConnectionData.Address = "127.0.0.1";
                     networkManager.StartClient();
                 }
 

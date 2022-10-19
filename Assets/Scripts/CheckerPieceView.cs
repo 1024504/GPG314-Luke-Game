@@ -16,6 +16,6 @@ public class CheckerPieceView : MonoBehaviour
 
 	public void RippleEffect(Vector3 position)
 	{
-		Instantiate(rippleEffectPrefab, position, Quaternion.identity);
+		Instantiate(rippleEffectPrefab, position, Quaternion.identity, transform);
 	}
 }

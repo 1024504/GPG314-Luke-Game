@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 public class PlayerController : NetworkBehaviour, IKickable
 {
@@ -45,6 +46,7 @@ public class PlayerController : NetworkBehaviour, IKickable
     {
 	    _networkManager = NetworkManager.Singleton;
 	    _networkManager.OnClientConnectedCallback += MoveOnSpawn;
+        if (IsServer) _networkManager.SceneManager.OnLoad += ActivatePlayer;
 	    _transform = transform;
         _rb = GetComponent<Rigidbody>();
         
@@ -84,6 +86,17 @@ public class PlayerController : NetworkBehaviour, IKickable
 	    if (OwnerClientId != clientId) return;
 	    Vector3 displacement = new Vector3(clientId*4f,0f,0f);
 	    MoveOnSpawnClientRpc(displacement);
+    }
+
+    void ActivatePlayer(ulong clientId, string sceneName, LoadSceneMode loadSceneMode, AsyncOperation asyncOperation)
+    {
+        ActivatePlayerClientRpc();
+    }
+    
+    [ClientRpc]
+    void ActivatePlayerClientRpc()
+    {
+        gameObject.SetActive(true);
     }
 
     [ClientRpc]

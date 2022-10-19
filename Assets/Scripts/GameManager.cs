@@ -23,10 +23,10 @@ public class GameManager : NetworkBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space) && IsServer)
+        /*if (Input.GetKeyDown(KeyCode.Space) && IsServer)
         {
 	        LoadSceneClientRpc("Test Scene 2");
-        }
+        }*/
     }
 
     [ClientRpc]

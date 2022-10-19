@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEditor.Build.Content;
 using UnityEngine;
 
@@ -10,8 +11,14 @@ public class HostOrJoinGUI : MonoBehaviour
 	// [SerializeField] private JoinGUI joinGui;
 
 	public string playerName;
-	
-	void OnGUI()
+    private NetworkManager _networkManager;
+
+    private void OnEnable()
+    {
+        _networkManager = NetworkManager.Singleton;
+    }
+
+    void OnGUI()
 	{
 		GUILayout.BeginArea(new Rect(Screen.width/2f - Screen.width/4f, 20, Screen.width/2f, 300));
 		
@@ -20,11 +27,13 @@ public class HostOrJoinGUI : MonoBehaviour
 			hostGui.enabled = true;
 			hostGui.playerName = playerName;
 			enabled = false;
-		}
+            _networkManager.StartHost();
+        }
 
 		if (GUILayout.Button("Join"))
 		{
 			Debug.Log("Load Client Scene");
+            _networkManager.StartClient();
 		}
 
 		GUILayout.BeginHorizontal();
