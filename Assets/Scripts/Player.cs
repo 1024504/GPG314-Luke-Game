@@ -56,7 +56,7 @@ public class Player : NetworkBehaviour, IControllable, IKickable
         _move.Enable();
         _move.performed += MoveInputPerformed;
         _move.canceled += MoveInputCancelled;
-        _kick = _playerControls.Player.Kick;
+        _kick = _playerControls.Player.Interact;
         _kick.Enable();
         _kick.performed += KickPerformed;
     }
@@ -141,26 +141,26 @@ public class Player : NetworkBehaviour, IControllable, IKickable
 
     public void Move(Vector2 direction)
     {
-        throw new System.NotImplementedException();
+        
     }
 
     public void Aim(Vector2 direction)
     {
-        throw new System.NotImplementedException();
+        
     }
 
     public void Interact()
     {
-        throw new System.NotImplementedException();
+        
     }
 
     public void Action1()
     {
-        throw new System.NotImplementedException();
+        
     }
 
     public void Action2()
     {
-        throw new System.NotImplementedException();
+        
     }
 }
