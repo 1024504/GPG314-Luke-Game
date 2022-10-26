@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
 
 public class Player : NetworkBehaviour, IControllable, IKickable
 {
@@ -13,96 +12,17 @@ public class Player : NetworkBehaviour, IControllable, IKickable
     [SerializeField] private Vector2 moveInput;
     private Transform _transform;
     private Rigidbody _rb;
-    public float acceleration = 15f;
-    public float maxSpeed = 10f;
+    public float acceleration = 100f;
+    public float maxSpeed = 15f;
     public float turnSpeed = 5f;
-    public float drag = 1f;
+    public float drag = 7f;
     
-    public List<IKickable> kickTargets = new();
-
-    private NetworkManager _networkManager;
-    
-    #region Inputs
-    private void MoveInputPerformed(InputAction.CallbackContext context)
-    {
-	    if (!IsLocalPlayer) return;
-        moveInput = context.ReadValue<Vector2>();
-    }
-    
-    private void MoveInputCancelled(InputAction.CallbackContext context)
-    {
-	    if (!IsLocalPlayer) return;
-        moveInput = Vector2.zero;
-    }
-
-    private void KickPerformed(InputAction.CallbackContext context)
-    {
-	    if (!IsLocalPlayer) return;
-	    RequestKickServerRpc();
-    }
-    #endregion
+    public List<IKickable> KickTargets = new();
 
     private void OnEnable()
     {
-	    _networkManager = NetworkManager.Singleton;
-	    _networkManager.OnClientConnectedCallback += MoveOnSpawn;
-        if (IsServer) _networkManager.SceneManager.OnLoad += ActivatePlayer;
 	    _transform = transform;
         _rb = GetComponent<Rigidbody>();
-        
-        
-        _playerControls = new();
-        _move = _playerControls.Player.Move;
-        _move.Enable();
-        _move.performed += MoveInputPerformed;
-        _move.canceled += MoveInputCancelled;
-        _kick = _playerControls.Player.Interact;
-        _kick.Enable();
-        _kick.performed += KickPerformed;
-    }
-
-    private void OnDisable()
-    {
-	    _move.performed -= MoveInputPerformed;
-        _move.canceled -= MoveInputCancelled;
-        _move.Disable();
-        _kick.performed -= KickPerformed;
-        _kick.Disable();
-    }
-    
-    // Update is called once per frame
-    private void FixedUpdate()
-    {
-	    if (IsLocalPlayer)
-	    {
-		    MovePlayer(moveInput); //Clientside prediction
-		    RequestPlayerFixedUpdateServerRpc(moveInput);
-	    }
-    }
-
-    void MoveOnSpawn(ulong clientId)
-    {
-	    if (!IsServer) return;
-	    if (OwnerClientId != clientId) return;
-	    Vector3 displacement = new Vector3(clientId*4f,0f,0f);
-	    MoveOnSpawnClientRpc(displacement);
-    }
-
-    void ActivatePlayer(ulong clientId, string sceneName, LoadSceneMode loadSceneMode, AsyncOperation asyncOperation)
-    {
-        ActivatePlayerClientRpc();
-    }
-    
-    [ClientRpc]
-    void ActivatePlayerClientRpc()
-    {
-        gameObject.SetActive(true);
-    }
-
-    [ClientRpc]
-    void MoveOnSpawnClientRpc(Vector3 displacement)
-    {
-	    _transform.position += displacement;
     }
 
     [ServerRpc]
@@ -127,7 +47,7 @@ public class Player : NetworkBehaviour, IControllable, IKickable
     [ServerRpc]
     private void RequestKickServerRpc()
     {
-	    foreach (IKickable t in kickTargets)
+	    foreach (IKickable t in KickTargets)
 	    {
 		    t.GetKicked(Vector3.SignedAngle(Vector3.forward,
 			    ((MonoBehaviour)t).GetComponent<Transform>().position-_transform.position, Vector3.up));
@@ -139,9 +59,20 @@ public class Player : NetworkBehaviour, IControllable, IKickable
         
     }
 
+    [ClientRpc]
+    public void AssignToClientEntityClientRpc(ulong clientId)
+    {
+        if (IsOwner)
+        {
+            ClientEntity clientEntity = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<ClientEntity>();
+            clientEntity.ControlledPlayer = gameObject;
+        }
+    }
+
     public void Move(Vector2 direction)
     {
-        
+        MovePlayer(direction); //Clientside prediction
+        RequestPlayerFixedUpdateServerRpc(direction);
     }
 
     public void Aim(Vector2 direction)
@@ -149,17 +80,17 @@ public class Player : NetworkBehaviour, IControllable, IKickable
         
     }
 
-    public void Interact()
+    public void Action1() //Kick
     {
-        
-    }
-
-    public void Action1()
-    {
-        
+        RequestKickServerRpc();
     }
 
     public void Action2()
+    {
+        
+    }
+    
+    public void Action3()
     {
         
     }

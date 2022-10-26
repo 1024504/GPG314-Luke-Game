@@ -1,48 +1,49 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.Mathematics;
 using Unity.Netcode;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class GameManager : NetworkBehaviour
 {
+	[SerializeField] private GameObject player;
 	[SerializeField] private GameObject whitePieces;
     [SerializeField] private GameObject blackPieces;
 
     private NetworkManager _networkManager;
 
-    public bool piecesSpawned;
-
-    void Start()
+    private void Start()
     {
 	    _networkManager = NetworkManager.Singleton;
-	    _networkManager.OnServerStarted += SpawnPieces;
+        SpawnPlayers();
+	    SpawnPieces();
+        _networkManager.OnClientConnectedCallback += SpawnLatePlayer;
     }
-
-    void Update()
+    
+    private void SpawnPlayers()
     {
-        /*if (Input.GetKeyDown(KeyCode.Space) && IsServer)
+        if (!IsServer) return;
+        
+        foreach (ulong id in _networkManager.ConnectedClientsIds)
         {
-	        LoadSceneClientRpc("Test Scene 2");
-        }*/
+            GameObject go = Instantiate(player);
+            go.GetComponent<NetworkObject>().SpawnWithOwnership(id);
+            go.GetComponent<IControllable>().AssignToClientEntityClientRpc(id);
+        }
     }
 
-    [ClientRpc]
-    void LoadSceneClientRpc(string sceneName)
+    private void SpawnPieces()
     {
-	    _networkManager.SceneManager.LoadScene(sceneName, LoadSceneMode.Additive);
-    }
-
-    void SpawnPieces()
-    {
-	    if (!IsServer || piecesSpawned) return;
-	    piecesSpawned = true;
+	    if (!IsServer) return;
 	    GameObject go = Instantiate(whitePieces);
 	    go.GetComponent<NetworkObject>().Spawn();
 	    
 	    go = Instantiate(blackPieces);
 	    go.GetComponent<NetworkObject>().Spawn();
+    }
+
+    private void SpawnLatePlayer(ulong clientId)
+    {
+        GameObject go = Instantiate(player);
+        go.GetComponent<NetworkObject>().Spawn();
     }
 }

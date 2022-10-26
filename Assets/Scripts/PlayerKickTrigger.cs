@@ -11,12 +11,12 @@ public class PlayerKickTrigger : MonoBehaviour
 	private void OnTriggerEnter(Collider other)
 	{
 		IKickable target = other.GetComponentInParent<IKickable>();
-		if (target != null) player.kickTargets.Add(target);
+		if (target != null) player.KickTargets.Add(target);
 	}
 
 	private void OnTriggerExit(Collider other)
 	{
 		IKickable target = other.GetComponentInParent<IKickable>();
-		if (target != null) player.kickTargets.Remove(target);
+		if (target != null) player.KickTargets.Remove(target);
 	}
 }

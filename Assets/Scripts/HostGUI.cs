@@ -41,6 +41,7 @@ public class HostGUI : MonoBehaviour
 			if (GUILayout.Button("Start Game"))
             {
                 _networkManager.SceneManager.LoadScene(selectedScene,LoadSceneMode.Additive);
+                enabled = false;
             }
 		}
 		else

@@ -32,7 +32,6 @@ public class HostOrJoinGUI : MonoBehaviour
 
 		if (GUILayout.Button("Join"))
 		{
-			Debug.Log("Load Client Scene");
             _networkManager.StartClient();
 		}
 
