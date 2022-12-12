@@ -1,149 +1,187 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using JetBrains.Annotations;
 using Unity.Netcode;
 using Unity.VisualScripting;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using Unity.Mathematics;
 
 public class CheckerPiece : NetworkBehaviour, IKickable
 {
 	///for testing
-	public float testAngle;
+	// public float testAngle;
 
 	public enum TeamColour
 	{
-		White,
-		Black
+		White=1,
+		Black=2
 	}
+
+	public int rank;
+	public int file;
+	private float _tileLength;
+	private float _tileWidth;
+	private int _numberOfRanks;
+	private int _numberOfFiles;
 
 	public float jumpHeight = 1f;
 	public TeamColour team;
-	private bool isKing;
+	private bool _isKing;
 
-	private bool IsKing
+	private bool _dieOnLanding = false;
+
+	public bool IsKing
 	{
-		get => isKing;
+		get => _isKing;
 		set
 		{
 			if (!IsServer) return;
 			ChangeKingStateClientRpc(value);
-			isKing = value;
+			_isKing = value;
 		}
 	}
 
-	private bool isMoving;
+	private bool _isMoving;
+	private List<int[]> _possibleConquers;
 
+	private GameManager _gm;
 	private CheckerPieceView _view;
 	private Transform _transform;
-	private OccupationStatus _targetOccupation;
 
 	private void Start()
 	{
 		_transform = transform;
 		_view = GetComponentInChildren<CheckerPieceView>();
+		_gm = GameManager.Singleton;
+		_tileLength = _gm.tileLength;
+		_tileWidth = _gm.tileWidth;
+		_numberOfRanks = _gm.numberOfRanks;
+		_numberOfFiles = _gm.numberOfFiles;
+		int index = rank + file * _numberOfRanks;
+		_gm.OccupancyArray[index] = (int)team;
+		_gm.checkerPieces[index] = this;
+		_possibleConquers = new();
+	}
+	
+	[ClientRpc]
+	private void GetTakenClientRpc()
+	{
+		if (_isMoving)
+		{
+			_dieOnLanding = true;
+			return;
+		}
+		Die();
 	}
 
-	[ClientRpc]
-	public void GetTakenClientRpc()
+	private void Die()
 	{
+		int index = rank + file * _numberOfRanks;
+		_gm.OccupancyArray[index] = 0;
+		_gm.checkerPieces[index] = null;
 		gameObject.SetActive(false);
 	}
-
+	
 	public void GetKicked(float angle)
 	{
-		if (isMoving) return;
-		if (!IsKing && IsMovingBackwards(angle)) return;
-		Vector3 target = GetTarget(angle, _transform.position);
-		if (IsOutOfBounds(target)) return;
-		_targetOccupation = CheckOccupationStatus(target);
-		if (!_targetOccupation.IsOccupied)
+		if (_isMoving) return;
+		int[] rankFileMovement = GetRankFileMovement(angle);
+		if (!IsKing && IsMovingBackwards(rankFileMovement)) return;
+		Vector3 target = GetTarget(rankFileMovement, _transform.position);
+		if (IsOutOfBounds(rankFileMovement)) return;
+		int targetOccupation = CheckOccupationStatus(rankFileMovement);
+		if (targetOccupation == 0)
 		{
+			UpdateRankFile(rankFileMovement);
 			StartCoroutine(MoveInArc(target, null));
 		}
-		else if (_targetOccupation.IsOpponent)
+		else if (targetOccupation != (int)team)
 		{
-			target = GetTarget(angle, target);
-			if (IsOutOfBounds(target)) return;
-			CheckerPiece opponentPiece = _targetOccupation.Opponent;
-			_targetOccupation = CheckOccupationStatus(target);
-			if (!_targetOccupation.IsOccupied) StartCoroutine(MoveInArc(target, opponentPiece));
+			rankFileMovement[0] += rankFileMovement[0];
+			rankFileMovement[1] += rankFileMovement[1];
+			target = GetTarget(rankFileMovement, _transform.position);
+			if (IsOutOfBounds(rankFileMovement)) return;
+			targetOccupation = CheckOccupationStatus(rankFileMovement);
+			if (targetOccupation == 0)
+			{
+				UpdateRankFile(rankFileMovement);
+				StartCoroutine(MoveInArc(target, _gm.checkerPieces[rank-rankFileMovement[0]/2+(file-rankFileMovement[1]/2)*_numberOfRanks]));
+			}
 		}
 	}
 	
-	private void CheckContinuingConquer()
+	private void UpdateRankFile(int[] rankFileMovement)
 	{
-		List<float> possibleAngles = new();
-		float angle;
-		Vector3 enemyTarget;
-		Vector3 moveTarget;
-		
+		int index = rank + file * _numberOfRanks;
+		_gm.OccupancyArray[index] = 0;
+		_gm.checkerPieces[index] = null;
+		rank += rankFileMovement[0];
+		file += rankFileMovement[1];
+		index = rank + file * _numberOfRanks;
+		_gm.OccupancyArray[index] = (int)team;
+		_gm.checkerPieces[index] = this;
+	}
+	
+	private bool CheckAvailableConquers()
+	{
 		for (int i = 0; i < 4; i++)
 		{
 			if (i>1 && !IsKing) break;
-			angle = -45+i*90;
+			float angle = -45+i*90;
 			if (team == TeamColour.Black) angle += 180;
-			enemyTarget = GetTarget(angle, _transform.position);
-			moveTarget = GetTarget(angle, enemyTarget);
-			if (IsOutOfBounds(moveTarget)) continue;
-			if (CheckOccupationStatus(moveTarget).IsOccupied) continue;
-			OccupationStatus targetOccupation = CheckOccupationStatus(enemyTarget);
-			if (targetOccupation.IsOccupied && targetOccupation.IsOpponent) possibleAngles.Add(angle);
+			int[] rankFileMovement = GetRankFileMovement(angle);
+			int occupationStatus = CheckOccupationStatus(rankFileMovement);
+			if(occupationStatus == 0 || occupationStatus == (int)team) continue;
+			rankFileMovement[0] += rankFileMovement[0];
+			rankFileMovement[1] += rankFileMovement[1];
+			if (IsOutOfBounds(rankFileMovement)) continue;
+			if (CheckOccupationStatus(rankFileMovement) != 0) continue;
+			_possibleConquers.Add(rankFileMovement);
 		}
-
-		if (possibleAngles.Count == 0) return;
-		angle = possibleAngles[Random.Range(0, possibleAngles.Count)];
-		enemyTarget = GetTarget(angle, _transform.position);
-		moveTarget = GetTarget(angle, enemyTarget);
-		StartCoroutine(MoveInArc(moveTarget,CheckOccupationStatus(enemyTarget).Opponent));
+		
+		if (_possibleConquers.Count == 0) return false;
+		return true;
 	}
 
-	private Vector3 GetTarget(float angle, Vector3 position)
-    {
-	    float xDiff = 10 * Mathf.Sign(Mathf.Sin(Mathf.Deg2Rad*angle));
-	    float zDiff = 10 * Mathf.Sign(Mathf.Cos(Mathf.Deg2Rad*angle));
-	    
-	    Vector3 target = new Vector3(position.x + xDiff, position.y, position.z + zDiff);
-	    
-	    return target;
-    }
-
-	private bool IsMovingBackwards(float angle)
+	private int[] GetRankFileMovement(float angle)
 	{
-		float zDiff = 10 * Mathf.Sign(Mathf.Cos(Mathf.Deg2Rad*angle));
-		if (team == TeamColour.White) return zDiff < 0;
-		return zDiff > 0;
+		float angleDeg = math.radians(angle);
+		return new[] {(int)math.sign(math.sin(angleDeg)),(int)math.sign(math.cos(angleDeg))};
+	}
+	
+		private Vector3 GetTarget(int[] rankFileMovement, Vector3 position)
+    {
+	    float xDiff = _tileWidth * rankFileMovement[0];
+	    float zDiff = _tileLength * rankFileMovement[1];
+	    
+	    return new Vector3(position.x + xDiff, position.y, position.z + zDiff);
+    }
+
+	private bool IsMovingBackwards(int[] rankFileMovement)
+	{
+		if (team == TeamColour.White) return rankFileMovement[1] < 0;
+		return rankFileMovement[1] > 0;
 	}
 
-    private bool IsOutOfBounds(Vector3 target)
+    private bool IsOutOfBounds(int[] rankFileMovement)
     {
-	    if (target.x > 40)	return true;
-	    if (target.x < -40)	return true;
-	    if (target.z > 40)	return true;
-	    return target.z < -40;
+	    if (rank+rankFileMovement[0] > _numberOfRanks-1) return true;
+	    if (rank+rankFileMovement[0] < 0) return true;
+	    if (file+rankFileMovement[1] > _numberOfFiles-1) return true;
+	    return file+rankFileMovement[1] < 0;
     }
-    
-    private bool IsEndOfBoard(Vector3 target) => target.z + 10 > 40 || target.z - 10 < -40;
 
-	    private OccupationStatus CheckOccupationStatus(Vector3 target)
+    private int CheckOccupationStatus(int[] rankFileMovement)
     {
-	    OccupationStatus res = new OccupationStatus();
-
-	    foreach (Collider t in Physics.OverlapBox(target, new Vector3(0.1f, 0.1f, 0.1f)))
-	    {
-		    CheckerPiece overlap = t.GetComponent<CheckerPiece>();
-		    if (overlap == null) continue;
-		    res.IsOccupied = true;
-			res.IsOpponent = overlap.team != team;
-			res.Opponent = overlap;
-	    }
-	    return res;
+	    return _gm.OccupancyArray[rank+rankFileMovement[0]+(file+rankFileMovement[1])*_numberOfRanks];
     }
 
     private IEnumerator MoveInArc(Vector3 target, CheckerPiece opponent)
     {
-	    isMoving = true;
+	    _isMoving = true;
 	    Vector3 position = _transform.position;
 	    Vector3 lateralStep = (target - position) / 100f;
 	    float lateralDistance = Vector3.Distance(position, target);
@@ -158,10 +196,31 @@ public class CheckerPiece : NetworkBehaviour, IKickable
 	    }
 	    MovePieceClientRpc(target);
 	    if (IsServer) StartRippleEffectClientRpc(target);
-	    isMoving = false;
+	    _isMoving = false;
+	    if (_dieOnLanding)
+	    {
+		    _dieOnLanding = false;
+		    Die();
+	    }
 	    if (IsEndOfBoard(target)) IsKing = true;
-	    if (opponent != null) CheckContinuingConquer();
+	    if (opponent == null) yield break;
+	    if (CheckAvailableConquers())
+	    {
+		    int[] rankFileMovement = _possibleConquers[Random.Range(0, _possibleConquers.Count)];
+		    position = _transform.position;
+		    Vector3 moveTarget = GetTarget(rankFileMovement, position);
+		    UpdateRankFile(rankFileMovement);
+		    StartCoroutine(MoveInArc(moveTarget,
+			    _gm.checkerPieces[rank - rankFileMovement[0] / 2 + (file - rankFileMovement[1] / 2) * _numberOfRanks]));
+	    }
+	    else
+	    {
+		    GameManager.Singleton.CheckAvailableMoves();
+	    }
     }
+    
+    private bool IsEndOfBoard(Vector3 target) => target.z + _tileLength > _tileLength*_numberOfFiles/2f
+                                                 || target.z - _tileLength < -_tileLength*_numberOfFiles/2f;
 
     [ClientRpc]
     private void StartRippleEffectClientRpc(Vector3 position)
@@ -177,11 +236,4 @@ public class CheckerPiece : NetworkBehaviour, IKickable
 
     [ClientRpc]
     private void MovePieceClientRpc(Vector3 target) => _transform.position = target;
-
-    private struct OccupationStatus
-    {
-	    public bool IsOccupied;
-	    public bool IsOpponent;
-	    public CheckerPiece Opponent;
-    }
 }
