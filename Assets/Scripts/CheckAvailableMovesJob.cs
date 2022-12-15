@@ -65,12 +65,6 @@ public struct CheckAvailableMovesJob : IJobParallelFor
 		return new[] {(int)math.sign(math.sin(angleDeg)),(int)math.sign(math.cos(angleDeg))};
 	}
 	
-	private bool IsMovingBackwards(int[] rankFileMovement, int index)
-	{
-		if (Teams[index] == CheckerPiece.TeamColour.White) return rankFileMovement[1] < 0;
-		return rankFileMovement[1] > 0;
-	}
-	
 	private bool IsOutOfBounds(int[] rankFileMovement, int index)
 	{
 		if (Ranks[index]+rankFileMovement[0] > NumberOfRanks-1) return true;

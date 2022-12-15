@@ -201,9 +201,14 @@ public class CheckerPiece : NetworkBehaviour, IKickable
 	    {
 		    _dieOnLanding = false;
 		    Die();
+		    GameManager.Singleton.CheckAvailableMoves();
 	    }
 	    if (IsEndOfBoard(target)) IsKing = true;
-	    if (opponent == null) yield break;
+	    if (opponent == null)
+	    {
+		    GameManager.Singleton.CheckAvailableMoves();
+		    yield break;
+	    }
 	    if (CheckAvailableConquers())
 	    {
 		    int[] rankFileMovement = _possibleConquers[Random.Range(0, _possibleConquers.Count)];

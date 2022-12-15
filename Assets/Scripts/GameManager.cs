@@ -5,6 +5,7 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using Unity.Jobs;
+using Unity.VisualScripting;
 using Unity.VisualScripting.Dependencies.NCalc;
 
 public class GameManager : NetworkBehaviour
@@ -118,12 +119,6 @@ public class GameManager : NetworkBehaviour
 	    return false;
     }
 
-    private void Update() //This is stupid
-    {
-	    Debug.Log(CheckTeamsAlive());
-	    Debug.Log(movesAvailable);
-    }
-
     //Check pieces have moves;
     public void CheckAvailableMoves()
     {
@@ -132,14 +127,15 @@ public class GameManager : NetworkBehaviour
 	    _teams.Clear();
 	    _isKings.Clear();
 
-	    int totalWhitePieces = _whitePieces.childCount;
-	    
+	    CheckerPiece[] whitePieces = _whitePieces.GetComponentsInChildren<CheckerPiece>();
+	    CheckerPiece[] blackPieces = _blackPieces.GetComponentsInChildren<CheckerPiece>();
+	    _totalPieces = whitePieces.Length + blackPieces.Length;
+
 	    for (int i = 0; i < _totalPieces; i++)
 	    {
-		    if (i < totalWhitePieces)
+		    if (i < whitePieces.Length)
 		    {
-			    if (!_whitePieces.GetChild(i).gameObject.activeSelf) continue;
-			    CheckerPiece piece = _whitePieces.GetChild(i).GetComponent<CheckerPiece>();
+			    CheckerPiece piece = whitePieces[i].GetComponent<CheckerPiece>();
 			    _ranks.Add(piece.rank);
 			    _files.Add(piece.file);
 			    _teams.Add(piece.team);
@@ -147,8 +143,7 @@ public class GameManager : NetworkBehaviour
 		    }
 		    else
 		    {
-			    if (!_blackPieces.GetChild(i-totalWhitePieces).gameObject.activeSelf) continue;
-			    CheckerPiece piece = _blackPieces.GetChild(i-totalWhitePieces).GetComponent<CheckerPiece>();
+			    CheckerPiece piece = blackPieces[i-whitePieces.Length].GetComponent<CheckerPiece>();
 			    _ranks.Add(piece.rank);
 			    _files.Add(piece.file);
 			    _teams.Add(piece.team);
@@ -183,10 +178,11 @@ public class GameManager : NetworkBehaviour
 		    if (_movesAvailable[i])
 		    {
 			    moveAvailable = true;
+			    //end game
 			    break;
 		    }
 	    }
-	    movesAvailable = moveAvailable;
+	    movesAvailable = moveAvailable; // could be redundant
     }
 
     private void OnDrawGizmosSelected()
