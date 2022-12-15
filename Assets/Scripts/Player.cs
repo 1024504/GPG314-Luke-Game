@@ -12,6 +12,9 @@ public class Player : NetworkBehaviour, IControllable, IKickable
     [SerializeField] private Vector2 moveInput;
     private Transform _transform;
     private Rigidbody _rb;
+    public CheckerPiece.TeamColour team;
+    public Renderer teamColourView;
+    
     public float acceleration = 100f;
     public float maxSpeed = 15f;
     public float turnSpeed = 5f;

@@ -51,10 +51,15 @@ public class CheckerPiece : NetworkBehaviour, IKickable
 	private CheckerPieceView _view;
 	private Transform _transform;
 
-	private void Start()
+	private void OnEnable()
 	{
 		_transform = transform;
 		_view = GetComponentInChildren<CheckerPieceView>();
+	}
+
+	public void Setup()
+	{
+		if (!IsServer) return;
 		_gm = GameManager.Singleton;
 		_tileLength = _gm.tileLength;
 		_tileWidth = _gm.tileWidth;
@@ -66,8 +71,7 @@ public class CheckerPiece : NetworkBehaviour, IKickable
 		_possibleConquers = new();
 	}
 	
-	[ClientRpc]
-	private void GetTakenClientRpc()
+	private void GetTaken()
 	{
 		if (_isMoving)
 		{
@@ -82,6 +86,12 @@ public class CheckerPiece : NetworkBehaviour, IKickable
 		int index = rank + file * _numberOfRanks;
 		_gm.OccupancyArray[index] = 0;
 		_gm.checkerPieces[index] = null;
+		DieClientRpc();
+	}
+	
+	[ClientRpc]
+	private void DieClientRpc()
+	{
 		gameObject.SetActive(false);
 	}
 	
@@ -127,12 +137,14 @@ public class CheckerPiece : NetworkBehaviour, IKickable
 	
 	private bool CheckAvailableConquers()
 	{
+		_possibleConquers.Clear();
 		for (int i = 0; i < 4; i++)
 		{
 			if (i>1 && !IsKing) break;
 			float angle = -45+i*90;
 			if (team == TeamColour.Black) angle += 180;
 			int[] rankFileMovement = GetRankFileMovement(angle);
+			if (IsOutOfBounds(rankFileMovement)) continue;
 			int occupationStatus = CheckOccupationStatus(rankFileMovement);
 			if(occupationStatus == 0 || occupationStatus == (int)team) continue;
 			rankFileMovement[0] += rankFileMovement[0];
@@ -191,7 +203,11 @@ public class CheckerPiece : NetworkBehaviour, IKickable
 	    {
 		    float height = -jumpHeight*4/Mathf.Pow(lateralDistance,2)*i*lateralStepDistance*(i*lateralStepDistance-lateralDistance);
 		    MovePieceClientRpc(new Vector3(position.x+i*lateralStep.x,position.y+height,position.z+i*lateralStep.z));
-		    if (i == 49 && opponent != null) opponent.GetTakenClientRpc();
+		    if (i == 49 && opponent != null)
+		    {
+			    opponent.GetTaken();
+			    GameManager.Singleton.CheckTeamsAlive();
+		    }
 		    yield return new WaitForSeconds(0.005f);
 	    }
 	    MovePieceClientRpc(target);

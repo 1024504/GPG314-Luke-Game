@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -11,12 +12,16 @@ using Unity.VisualScripting.Dependencies.NCalc;
 public class GameManager : NetworkBehaviour
 {
 	private bool _checkingMoves = false;
-	public bool movesAvailable = true;
+
+	[SerializeField] private MainGameUI ui;
 	
-	[SerializeField] private GameObject player;
+	[SerializeField] private GameObject playerPrefab;
 	[SerializeField] private GameObject whitePiecesPrefab;
     [SerializeField] private GameObject blackPiecesPrefab;
 
+    // Could do this as struct with team enum and material together.
+    [SerializeField] private Material[] materials;
+    
     private Transform _whitePieces;
     private Transform _blackPieces;
     private int _totalPieces;
@@ -35,61 +40,56 @@ public class GameManager : NetworkBehaviour
     private NativeList<bool> _isKings;
 
     public CheckerPiece[] checkerPieces;
+    public List<Player> players = new ();
 
     public static GameManager Singleton { get; private set; }
     private NetworkManager _networkManager;
 
     private NativeArray<bool> _movesAvailable;
 
-    private void Awake()
+    public override void OnNetworkSpawn()
     {
-	    Singleton = this;
-    }
-
-    private void Start()
-    {
-	    _networkManager = NetworkManager.Singleton;
-        SpawnPlayers();
-	    SpawnPieces();
-        _networkManager.OnClientConnectedCallback += SpawnLatePlayer;
-        checkerPieces = new CheckerPiece[OccupancyArray.Length];
-    }
-
-    private void OnEnable()
-    {
-	    //Using 1D array as 2D array, index = y*width+x
+	    base.OnNetworkSpawn();
+	    
 	    OccupancyArray = new NativeArray<int>(numberOfRanks*numberOfFiles, Allocator.Persistent);
+	    Singleton = this;
+	    _networkManager = NetworkManager.Singleton;
+	    _networkManager.OnClientConnectedCallback += SpawnLatePlayer;
+	    checkerPieces = new CheckerPiece[OccupancyArray.Length];
     }
 
     private void OnDisable()
     {
-	    OccupancyArray.Dispose();
-	    _movesAvailable.Dispose();
-	    _ranks.Dispose();
-	    _files.Dispose();
-	    _teams.Dispose();
-	    _isKings.Dispose();
+	    if( OccupancyArray.IsCreated) OccupancyArray.Dispose();
+	    if(_movesAvailable.IsCreated) _movesAvailable.Dispose();
+	    if(_ranks.IsCreated) _ranks.Dispose();
+	    if(_files.IsCreated) _files.Dispose();
+	    if(_teams.IsCreated) _teams.Dispose();
+	    if(_isKings.IsCreated) _isKings.Dispose();
     }
 
-    private void SpawnPlayers()
+    public void SpawnPlayers()
     {
-        if (!IsServer) return;
-        
+	    int i = 0;
         foreach (ulong id in _networkManager.ConnectedClientsIds)
         {
-            GameObject go = Instantiate(player);
+            GameObject go = Instantiate(playerPrefab);
             go.GetComponent<NetworkObject>().SpawnWithOwnership(id);
             go.GetComponent<IControllable>().AssignToClientEntityClientRpc(id);
+            Player player = go.GetComponent<Player>();
+            player.team = (CheckerPiece.TeamColour)(i % 2 + 1);
+            player.teamColourView.material = materials[i % 2];
+            players.Add(player);
+            i++;
         }
     }
 
-    private void SpawnPieces()
+    public void SpawnPieces()
     {
-	    if (!IsServer) return;
 	    GameObject go = Instantiate(whitePiecesPrefab);
 	    go.GetComponent<NetworkObject>().Spawn();
 	    _whitePieces = go.transform;
-	    
+
 	    go = Instantiate(blackPiecesPrefab);
 	    go.GetComponent<NetworkObject>().Spawn();
 	    _blackPieces = go.transform;
@@ -100,23 +100,49 @@ public class GameManager : NetworkBehaviour
 	    _isKings = new NativeList<bool>(_totalPieces, Allocator.Persistent);
 	    _teams = new NativeList<CheckerPiece.TeamColour>(_totalPieces, Allocator.Persistent);
 	    _movesAvailable = new NativeArray<bool>(_totalPieces, Allocator.Persistent);
+
+	    foreach (CheckerPiece checkerPiece in _whitePieces.GetComponentsInChildren<CheckerPiece>())
+	    {
+		    checkerPiece.Setup();
+	    }
+	    foreach (CheckerPiece checkerPiece in _blackPieces.GetComponentsInChildren<CheckerPiece>())
+	    {
+		    checkerPiece.Setup();
+	    }
     }
 
     private void SpawnLatePlayer(ulong clientId)
     {
-        GameObject go = Instantiate(player);
+        GameObject go = Instantiate(playerPrefab);
         go.GetComponent<NetworkObject>().Spawn();
     }
 
-    //Check both teams have players;
-    public bool CheckTeamsAlive()
+    void EndGame()
     {
-	    for (int i = 0; i < _whitePieces.childCount; i++)
+	    foreach (var player in FindObjectsOfType<Player>())
 	    {
-		    if (_whitePieces.GetChild(i).gameObject.activeSelf) return true;
-		    if (_blackPieces.GetChild(i).gameObject.activeSelf) return true;
+		    Destroy(player.gameObject);
 	    }
-	    return false;
+	    players.Clear();
+	    
+	    Destroy(_whitePieces.gameObject);
+	    Destroy(_blackPieces.gameObject);
+
+	    ui.enabled = true;
+	    EnableUIClientRpc();
+    }
+
+    [ClientRpc]
+    private void EnableUIClientRpc()
+    {
+	    ui.enabled = true;
+    }
+
+    //Check both teams have players;
+    public void CheckTeamsAlive()
+    {
+	    if (_whitePieces.GetComponentsInChildren<CheckerPiece>().Length == 0 ||
+	        _blackPieces.GetComponentsInChildren<CheckerPiece>().Length == 0) EndGame();
     }
 
     //Check pieces have moves;
@@ -172,17 +198,11 @@ public class GameManager : NetworkBehaviour
 	    if (!_checkingMoves) return;
 	    _checkingMoves = false;
 	    _handles.Complete();
-	    bool moveAvailable = false;
 	    for (int i = 0; i < _totalPieces; i++)
 	    {
-		    if (_movesAvailable[i])
-		    {
-			    moveAvailable = true;
-			    //end game
-			    break;
-		    }
+		    if (_movesAvailable[i]) break;
+		    if (i == _totalPieces-1) EndGame();
 	    }
-	    movesAvailable = moveAvailable; // could be redundant
     }
 
     private void OnDrawGizmosSelected()

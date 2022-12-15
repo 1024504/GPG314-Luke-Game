@@ -11,6 +11,8 @@ public class PlayerKickTrigger : MonoBehaviour
 	private void OnTriggerEnter(Collider other)
 	{
 		IKickable target = other.GetComponentInParent<IKickable>();
+		CheckerPiece checker = other.GetComponentInParent<CheckerPiece>();
+		if (checker != null) if (checker.team != player.team) target = null;
 		if (target != null) player.KickTargets.Add(target);
 	}
 

@@ -360,8 +360,11 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2142916499}
+  - component: {fileID: 2142916502}
   - component: {fileID: 2142916497}
   - component: {fileID: 2142916498}
+  - component: {fileID: 2142916500}
+  - component: {fileID: 2142916501}
   m_Layer: 0
   m_Name: LobbyUI
   m_TagString: Untagged
@@ -381,8 +384,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0bdc58efba76d6346ba8f309248d71b1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hostGui: {fileID: 2142916498}
-  playerName: 
+  uiManager: {fileID: 2142916502}
+  hostUI: {fileID: 2142916498}
+  joinUI: {fileID: 2142916500}
 --- !u!114 &2142916498
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -395,12 +399,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8b7cad26fdf881243b7d36d4d51c5bd4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hostOrJoinGui: {fileID: 2142916497}
-  playerName: 
-  sceneCount: 0
-  scenes: []
-  selectedScene: 
-  playerNames: []
+  uiManager: {fileID: 2142916502}
+  hostOrJoinUI: {fileID: 2142916497}
 --- !u!4 &2142916499
 Transform:
   m_ObjectHideFlags: 0
@@ -416,3 +416,50 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2142916500
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2142916496}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bd5aacec55d5b244ac7f6fc36020d16, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  uiManager: {fileID: 2142916502}
+  hostOrJoinUI: {fileID: 2142916497}
+--- !u!114 &2142916501
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2142916496}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 4280131479
+  AlwaysReplicateAsRoot: 0
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+--- !u!114 &2142916502
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2142916496}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f1caea47c971394e93b910b77fad04a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  joinUI: {fileID: 2142916500}
+  sceneCount: 0
+  scenes: []
+  selectedScene: 
+  transport: {fileID: 0}
