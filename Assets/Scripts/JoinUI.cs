@@ -56,13 +56,18 @@ public class JoinUI : MonoBehaviour
 
 		if (GUILayout.Button("Back"))
 		{
-			NetworkManager.Singleton.Shutdown();
-			hostOrJoinUI.enabled = true;
-			enabled = false;
+			Back();
 		}
 
 		GUILayout.EndVertical();
 
 		GUILayout.EndArea();
+	}
+
+	public void Back()
+	{
+		NetworkManager.Singleton.Shutdown();
+		hostOrJoinUI.enabled = true;
+		enabled = false;
 	}
 }

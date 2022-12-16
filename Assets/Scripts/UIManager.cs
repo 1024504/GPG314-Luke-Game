@@ -45,11 +45,20 @@ public class UIManager : NetworkBehaviour
 		}
 	}
 
+	private void FixedUpdate()
+	{
+		foreach (var VARIABLE in PlayerNames)
+		{
+			Debug.Log(VARIABLE);
+		}
+	}
+
 	public override void OnNetworkSpawn()
 	{
 		base.OnNetworkSpawn();
-		
+
 		_networkManager.OnClientDisconnectCallback += RemovePlayerName;
+		_networkManager.OnClientDisconnectCallback += ReturnToLobby;
 		RequestNameChangeServerRpc(_networkManager.LocalClientId, _playerName);
 	}
 	
@@ -93,5 +102,13 @@ public class UIManager : NetworkBehaviour
 	private void RemovePlayerName(ulong clientId)
 	{
 		PlayerNames.Remove(clientId);
+	}
+
+	private void ReturnToLobby(ulong clientId)
+	{
+		if (joinUI.enabled)
+		{
+			joinUI.Back();
+		}
 	}
 }

@@ -86,7 +86,9 @@ public class CheckerPiece : NetworkBehaviour, IKickable
 		int index = rank + file * _numberOfRanks;
 		_gm.OccupancyArray[index] = 0;
 		_gm.checkerPieces[index] = null;
+		GameManager.Singleton.CheckAvailableMoves();
 		DieClientRpc();
+		gameObject.SetActive(false);
 	}
 	
 	[ClientRpc]
@@ -213,11 +215,12 @@ public class CheckerPiece : NetworkBehaviour, IKickable
 	    MovePieceClientRpc(target);
 	    if (IsServer) StartRippleEffectClientRpc(target);
 	    _isMoving = false;
+	    bool racingPiecesCheck = false; // Prevents error in job when taken piece is moving.
 	    if (_dieOnLanding)
 	    {
+		    racingPiecesCheck = true;
 		    _dieOnLanding = false;
 		    Die();
-		    GameManager.Singleton.CheckAvailableMoves();
 	    }
 	    if (IsEndOfBoard(target)) IsKing = true;
 	    if (opponent == null)
@@ -234,7 +237,7 @@ public class CheckerPiece : NetworkBehaviour, IKickable
 		    StartCoroutine(MoveInArc(moveTarget,
 			    _gm.checkerPieces[rank - rankFileMovement[0] / 2 + (file - rankFileMovement[1] / 2) * _numberOfRanks]));
 	    }
-	    else
+	    else if (!racingPiecesCheck)
 	    {
 		    GameManager.Singleton.CheckAvailableMoves();
 	    }

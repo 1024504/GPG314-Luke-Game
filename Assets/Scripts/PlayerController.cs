@@ -99,7 +99,6 @@ public class PlayerController : NetworkBehaviour
 		     _aimDirection = Vector2.ClampMagnitude(_aimInput-new Vector2(playerPos.x, playerPos.y), 1f);
 		    return;
 	    }
-
 	    _aimDirection = _aimInput;
     }
     
@@ -113,18 +112,21 @@ public class PlayerController : NetworkBehaviour
     private void Action1Performed(InputAction.CallbackContext context)
     {
 	    if (!IsLocalPlayer) return;
+	    if (player == null) return;
 	    player.GetComponent<IControllable>()?.Action1();
     }
     
     private void Action2Performed(InputAction.CallbackContext context)
     {
 	    if (!IsLocalPlayer) return;
+	    if (player == null) return;
 	    player.GetComponent<IControllable>()?.Action2();
     }
     
     private void Action3Performed(InputAction.CallbackContext context)
     {
         if (!IsLocalPlayer) return;
+        if (player == null) return;
         player.GetComponent<IControllable>()?.Action3();
     }
 }
