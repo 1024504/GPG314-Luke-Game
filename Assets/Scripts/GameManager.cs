@@ -12,13 +12,13 @@ using Unity.VisualScripting.Dependencies.NCalc;
 public class GameManager : NetworkBehaviour
 {
 	private bool _checkingMoves = false;
-
+	
 	[SerializeField] private MainGameUI ui;
 	
 	[SerializeField] private GameObject playerPrefab;
 	[SerializeField] private GameObject whitePiecesPrefab;
     [SerializeField] private GameObject blackPiecesPrefab;
-
+    
     // Could do this as struct with team enum and material together.
     [SerializeField] private Material[] materials;
     

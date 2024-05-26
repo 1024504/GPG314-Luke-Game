@@ -45,14 +45,6 @@ public class UIManager : NetworkBehaviour
 		}
 	}
 
-	private void FixedUpdate()
-	{
-		foreach (var VARIABLE in PlayerNames)
-		{
-			Debug.Log(VARIABLE);
-		}
-	}
-
 	public override void OnNetworkSpawn()
 	{
 		base.OnNetworkSpawn();

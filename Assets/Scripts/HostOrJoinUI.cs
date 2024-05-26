@@ -16,10 +16,8 @@ public class HostOrJoinUI : MonoBehaviour
 		
 		if (GUILayout.Button("Host"))
 		{
-			NetworkManager.Singleton.StartHost();
-			hostUI.enabled = true;
-			enabled = false;
-        }
+			Host();
+		}
 		
 		uiManager.transport.ConnectionData.Address = GUILayout.TextField(uiManager.transport.ConnectionData.Address, 22);
 
@@ -27,9 +25,7 @@ public class HostOrJoinUI : MonoBehaviour
 		{
 			if (GUILayout.Button("Join"))
 			{
-				NetworkManager.Singleton.StartClient();
-				joinUI.enabled = true;
-				enabled = false;
+				Join();
 			}
 		}
 
@@ -43,5 +39,19 @@ public class HostOrJoinUI : MonoBehaviour
 		GUILayout.EndHorizontal();
 		
 		GUILayout.EndArea();
+	}
+
+	private void Host()
+	{
+		NetworkManager.Singleton.StartHost();
+		hostUI.enabled = true;
+		enabled = false;
+	}
+
+	private void Join()
+	{
+		NetworkManager.Singleton.StartClient();
+		joinUI.enabled = true;
+		enabled = false;
 	}
 }

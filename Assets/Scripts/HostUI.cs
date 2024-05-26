@@ -12,14 +12,13 @@ public class HostUI : MonoBehaviour
 
 	void OnGUI()
 	{
-		GUILayout.BeginArea(new Rect(Screen.width/2f - Screen.width/2.5f, 20, Screen.width*2/2.5f, 300));
+		GUILayout.BeginArea(new Rect(Screen.width/2f - Screen.width/2.5f, 20, Screen.width*2/2.5f, 300));//1
+		
 		if (uiManager.selectedScene != "")
 		{
 			if (GUILayout.Button("Start Game"))
             {
-	            NetworkManager.Singleton.SceneManager.LoadScene(uiManager.selectedScene,LoadSceneMode.Additive);
-                enabled = false;
-                uiManager.StartGameClientRpc();
+	            StartGame();
             }
 		}
 		else
@@ -29,22 +28,24 @@ public class HostUI : MonoBehaviour
 
 		GUILayout.Space(20);
 
-		GUILayout.BeginVertical();
+		GUILayout.BeginVertical();//2
 		
-		GUILayout.BeginHorizontal();
+		GUILayout.BeginHorizontal();//3
+		
 		if (uiManager.PlayerName == "")
 		{
 			GUILayout.Label("Type your name -->");
 		}
 
 		uiManager.PlayerName = GUILayout.TextField(uiManager.PlayerName, 22);
-		GUILayout.EndHorizontal();
 		
-		GUILayout.BeginHorizontal();
+		GUILayout.EndHorizontal();//3
 		
-		GUILayout.BeginVertical();
+		GUILayout.BeginHorizontal();//4
 		
-		GUILayout.BeginHorizontal();
+		GUILayout.BeginVertical();//5
+		
+		GUILayout.BeginHorizontal();//6
 
 		GUILayout.Label("Level: ");
 
@@ -57,37 +58,49 @@ public class HostUI : MonoBehaviour
 			GUILayout.Label(uiManager.selectedScene);
 		}
 		
-		GUILayout.EndHorizontal();
+		GUILayout.EndHorizontal();//6
 		
 		foreach (string sceneName in uiManager.scenes)
 		{
 			if (GUILayout.Button(sceneName)) uiManager.selectedScene = sceneName;
 		}
 		
-		GUILayout.EndVertical();
+		GUILayout.EndVertical();//5
 		
-		GUILayout.BeginVertical();
+		GUILayout.BeginVertical();//7
 
 		foreach (KeyValuePair<ulong, string> playerName in uiManager.PlayerNames)
 		{
 			GUILayout.Label(playerName.Value);
 		}
 		
-		GUILayout.EndVertical();
+		GUILayout.EndVertical();//7
 		
-		GUILayout.EndHorizontal();
+		GUILayout.EndHorizontal();//4
 		
 		GUILayout.Space(20);
 
 		if (GUILayout.Button("Back"))
 		{
-			NetworkManager.Singleton.Shutdown();
-			hostOrJoinUI.enabled = true;
-			enabled = false;
+			Back();
 		}
 
-		GUILayout.EndVertical();
+		GUILayout.EndVertical();//2
 
-		GUILayout.EndArea();
+		GUILayout.EndArea();//1
+	}
+
+	private void StartGame()
+	{
+		NetworkManager.Singleton.SceneManager.LoadScene(uiManager.selectedScene,LoadSceneMode.Additive);
+		enabled = false;
+		uiManager.StartGameClientRpc();
+	}
+
+	private void Back()
+	{
+		NetworkManager.Singleton.Shutdown();
+		hostOrJoinUI.enabled = true;
+		enabled = false;
 	}
 }

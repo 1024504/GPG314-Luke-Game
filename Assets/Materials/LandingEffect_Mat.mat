@@ -20,7 +20,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: LandingEffect
+  m_Name: LandingEffect_Mat
   m_Shader: {fileID: -6465566751694194690, guid: 9a6b931789cef254bb24089750bd41c9, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
